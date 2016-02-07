@@ -4,12 +4,18 @@ QPKG_NAME=QCouchPotato
 QPKG_DIR=$(/sbin/getcfg $QPKG_NAME Install_Path -f /etc/config/qpkg.conf)
 PID_FILE="$QPKG_DIR/config/couchpotato.pid"
 
-DAEMON=/usr/bin/python2.7
 DAEMON_OPTS="CouchPotato.py --data_dir $QPKG_DIR/config --daemon --pid_file $PID_FILE"
 
-export PATH=/Apps/bin:/usr/local/bin:$PATH
-export LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH
-export PYTHONPATH=$QPKG_DIR/Repository/lib/python
+# Determin Arch
+ver="none"
+if /bin/uname -m | grep "armv5tejl"; then ver="arm"; fi
+if /bin/uname -m | grep "armv5tel"; then ver="arm"; fi
+if /bin/uname -m | grep "i686"; then ver="x86"; fi
+if /bin/uname -m | grep "x86_64"; then ver="x86"; fi
+if /bin/uname -m | grep "armv7l"; then ver="x31"; fi
+arch="$(/bin/uname -m)"
+[ $ver = "none" ] && err_log "Could not determine architecture $arch"
+export PATH=${QPKG_DIR}/${ver}/bin-utils:/Apps/bin:/usr/local/bin:$PATH
 
 CheckQpkgEnabled() { #Is the QPKG enabled? if not exit the script
 	if [ $(/sbin/getcfg ${QPKG_NAME} Enable -u -d FALSE -f /etc/config/qpkg.conf) = UNKNOWN ]; then
@@ -24,29 +30,36 @@ CheckQpkgEnabled() { #Is the QPKG enabled? if not exit the script
 		echo "git is disabled."
 		exit 1
 	fi
-	if [ `/sbin/getcfg "Python" Enable -u -d FALSE -f /etc/config/qpkg.conf` = UNKNOWN ]; then
-		/sbin/setcfg "Python" Enable TRUE -f /etc/config/qpkg.conf
-	elif [ `/sbin/getcfg "Python" Enable -u -d FALSE -f /etc/config/qpkg.conf` != TRUE ]; then
-		echo "Python is disabled."
-		exit 1
-	fi
+	#if [ `/sbin/getcfg "Python" Enable -u -d FALSE -f /etc/config/qpkg.conf` = UNKNOWN ]; then
+	#	/sbin/setcfg "Python" Enable TRUE -f /etc/config/qpkg.conf
+	#elif [ `/sbin/getcfg "Python" Enable -u -d FALSE -f /etc/config/qpkg.conf` != TRUE ]; then
+	#	echo "Python is disabled."
+	#	exit 1
+	#fi
 	[ -x /Apps/bin/git ] || /etc/init.d/git.sh restart && sleep 2
-	[ -x $DAEMON ] || /etc/init.d/python.sh restart && sleep 2
+	#[ -x $DAEMON ] || /etc/init.d/python.sh restart && sleep 2
 }
 
 ConfigPython(){ #checks if the daemon exists and will link /usr/bin/python to it
-	# python dependency checking
-	if [ ! -x $DAEMON ]; then
-		/sbin/write_log "Failed to start $QPKG_NAME, $DAEMON was not found. Please re-install the Pythton qpkg." 1
-		exit 1
-	fi
-       if /bin/uname -m | grep "armv7l"; then
-		PY_DIR=$(/sbin/getcfg Python Install_Path -f /etc/config/qpkg.conf)
-		[ -f ${PY_DIR}/lib/python2.7/lib-dynload/_ctypes.so ] || cp $QPKG_DIR/x31-lib/_ctypes.so ${PY_DIR}/lib/python2.7/lib-dynload/_ctypes.so
-		[ -f ${PY_DIR}/lib/python2.7/lib-dynload/_sqlite3.so ] || cp $QPKG_DIR/x31-lib/_sqlite3.so ${PY_DIR}/lib/python2.7/lib-dynload/_sqlite3.so
-		[ -f ${PY_DIR}/lib/python2.7/lib-dynload/_ssl.so ] || cp $QPKG_DIR/x31-lib/_ssl.so ${PY_DIR}/lib/python2.7/lib-dynload/_ssl.so
-		[ -f ${PY_DIR}/lib/python2.7/lib-dynload/zlib.so ] || cp $$QPKG_DIR/x31-lib/zlib.so ${PY_DIR}/lib/python2.7/lib-dynload/zlib.so
-	fi
+	#python dependency checking
+        VER=0
+        DAEMON="None"
+        for DAEMON2 in /usr/bin/python2.7 /usr/local/bin/python2.7 /opt/bin/python2.7 /Apps/opt/bin/python2.7 /opt/QPython2/bin/python2.7
+        do
+                echo "Looking for $DAEMON2"
+                [ ! -x $DAEMON2 ] && continue
+                VER2=$(expr substr "$(${DAEMON2} -V 2>&1)" 8 8)
+                if [ $VER2 > $VER ]; then
+                        DAEMON=$DAEMON2
+                        VER=$VER2
+                fi
+        done
+        if [ ! -x $DAEMON ]; then
+                /sbin/write_log "Failed to start $QPKG_NAME, $DAEMON was not found. Please re-install the Pythton qpkg." 1
+                exit 1
+        else
+                /bin/echo "Found Python Version ${VER} at ${DAEMON}"
+        fi
 }
 
 CheckForGit(){ #Does git exist?
@@ -80,10 +93,10 @@ CheckQpkgRunning() { #Is the QPKG already running? if so, exit the script
 
 UpdateQpkg(){ # does a git pull to update to the latest code
 	/bin/echo "Updating $QPKG_NAME"
-	# The url to the git repository we're going to install
+	#The url to the git repository we're going to install
 	GIT_URL=git://github.com/RuudBurger/CouchPotatoServer.git
 	GIT_URL1=http://github.com/RuudBurger/CouchPotatoServer.git
-	# git clone/pull the qpkg
+	#git clone/pull the qpkg
 	[ -d $QPKG_DIR/$QPKG_NAME/.git ] || git clone $GIT_URL $QPKG_DIR/$QPKG_NAME || git clone $GIT_URL1 $QPKG_DIR/$QPKG_NAME
 	cd $QPKG_DIR/$QPKG_NAME && git reset --hard HEAD && git pull && /bin/sync
 }
