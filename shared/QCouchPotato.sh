@@ -97,7 +97,7 @@ UpdateQpkg(){ # does a git pull to update to the latest code
 	GIT_URL=git://github.com/RuudBurger/CouchPotatoServer.git
 	GIT_URL1=http://github.com/RuudBurger/CouchPotatoServer.git
 	#git clone/pull the qpkg
-	[ -d $QPKG_DIR/$QPKG_NAME/.git ] || git clone $GIT_URL $QPKG_DIR/$QPKG_NAME || git clone $GIT_URL1 $QPKG_DIR/$QPKG_NAME
+	[ -d $QPKG_DIR/$QPKG_NAME/.git ] || git clone --depth 1 $GIT_URL $QPKG_DIR/$QPKG_NAME || git clone --depth 1 $GIT_URL1 $QPKG_DIR/$QPKG_NAME
 	cd $QPKG_DIR/$QPKG_NAME && git reset --hard HEAD && git pull && /bin/sync
 }
 
