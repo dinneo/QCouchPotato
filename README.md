@@ -6,7 +6,8 @@ CouchPotato server is automatically pulled from git repository when the package 
 
 # Install
 
-You can download the latest QPKG packages here https://github.com/hadim/QCouchPotato/releases.
+- Install Git and Python (use the community Python version from http://apps.qnap.community/)
+- You can download the latest QPKG packages here https://github.com/hadim/QCouchPotato/releases.
 
 # Contribute
 
