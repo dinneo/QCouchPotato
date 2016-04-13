@@ -94,8 +94,8 @@ CheckQpkgRunning() { #Is the QPKG already running? if so, exit the script
 UpdateQpkg(){ # does a git pull to update to the latest code
 	/bin/echo "Updating $QPKG_NAME"
 	#The url to the git repository we're going to install
-	GIT_URL=git://github.com/RuudBurger/CouchPotatoServer.git
-	GIT_URL1=http://github.com/RuudBurger/CouchPotatoServer.git
+	GIT_URL=git://github.com/CouchPotato/CouchPotatoServer.git
+	GIT_URL1=http://github.com/CouchPotato/CouchPotatoServer.git
 	#git clone/pull the qpkg
 	[ -d $QPKG_DIR/$QPKG_NAME/.git ] || git clone --depth 1 $GIT_URL $QPKG_DIR/$QPKG_NAME || git clone --depth 1 $GIT_URL1 $QPKG_DIR/$QPKG_NAME
 	cd $QPKG_DIR/$QPKG_NAME && git reset --hard HEAD && git pull && /bin/sync
